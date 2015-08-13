@@ -6,5 +6,6 @@ Authors: [Evan Herman](https://github.com/EvanHerman), [Ben Rothman](https://git
 
 #### FAQ
 
-** How come I can't change my permalinks? **
+**How come I can't change my permalinks?**
+
 You need to make sure that your permalinks are set to anything but the default inside of `Settings > Permalinks`. Once the permalinks are changed from the defaults you should have no problem changing the permlink of your page.
