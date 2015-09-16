@@ -11,19 +11,139 @@ Author URI:
 class Page_Duplicator {
 	
 	public function __construct() {
-		// Add custom clone post button
-		add_filter( 'page_row_actions', array( $this, 'add_clone_post_button' ), 10, 2 );
+		$cloneable_posts = get_option( 'cloneable_post_types', array(
+			'post',
+			'page'
+		) );
+		if( ! empty( $cloneable_posts ) ) {
+			foreach( $cloneable_posts as $cloneable ) {
+				// Add custom clone post button
+				add_filter( $cloneable . '_row_actions', array( $this, 'add_clone_post_button' ), 10, 2 );
+			}
+		}
 		// Intercept the action
 		add_action( 'init', array( $this, 'clone_dat_page' ) );
 		// Display clone notices
 		add_action( 'admin_notices', array( $this, 'clone_dat_page_admin_notice' ) );
+		// Add custom settings page
+		add_action( 'admin_menu', array( $this, 'create_wp_page_cloner_settings' ) );
+		// Register our settings
+		add_action( 'admin_init', array( $this, 'wp_page_cloner_settings_api_init' ) );
+		// Enqueue scripts/styles where needed
+		add_action( 'admin_enqueue_scripts', array( $this, 'wp_page_cloner_enqueue_scripts_and_styles' ) );
 	}
+	
+	
+	/* BEGIN SETTINGS PAGE */
+	/*****************************/
+	
+	/*
+	*	Register and display our settings page
+	*	@since 0.1
+	*/
+	public function create_wp_page_cloner_settings() {
+		add_submenu_page( 
+			  'options-general.php',   //or 'options.php' 
+			  __( 'WP Page Cloner', 'wp-page-cloner' ), 
+			__( 'WP Page Cloner', 'wp-page-cloner' ), 
+			'manage_options', 
+			'wp-page-cloner-settings', 
+			array( $this, 'wp_page_cloner_settings_page' )
+		);
+	}	
+	
+	/*
+	*	Add our settings sections / settings
+	*	@since 0.1
+	*/
+	public function wp_page_cloner_settings_api_init() {
+	
+		// Register our setting so that $_POST handling is done for us and
+		// our callback function just has to echo the <input>
+		register_setting(
+			'wp-page-cloner-settings',
+			'cloneable_post_types'
+		);
+	
+		// Add the section to reading settings so we can add our		
+		// First, we register a section. This is necessary since all future options must belong to one.
+		add_settings_section(
+			'wp-page-cloner-settings',         // ID used to identify this section and with which to register options
+			'Sandbox Options',                  // Title to be displayed on the administration page
+			array( $this, 'wp_page_cloner_setting_section_callback_function' ), // Callback used to render the description of the section
+			'wp-page-cloner-settings'                           // Page on which to add this section of options
+		);
+		
+		// Add the field with the names and function to use for our new
+		// settings, put it in our new section
+		add_settings_field( 
+			'cloneable_post_types',                      // ID used to identify the field throughout the theme
+			__( 'Select Post Types', 'wp-page-cloner' ),                           // The label to the left of the option interface element
+			array( $this, 'wp_page_cloner_cloneable_post_types_callback_function' ),   // The name of the function responsible for rendering the option interface
+			'wp-page-cloner-settings',                       // The page on which this option will be displayed
+			'wp-page-cloner-settings',         // The name of the section to which this field belongs
+			array(                              // The array of arguments to pass to the callback. In this case, just a description.
+				__( 'Select which post types should be cloneable. By default, posts and pages are cloneable.', 'wp-page-cloner' )
+			)
+		);
+				
+	} // eg_settings_api_init()
+  
+	/*
+	*	Include our page cloner settings page
+	*	@since 0.1
+	*/
+	public function wp_page_cloner_settings_page() {
+		include_once( plugin_dir_path( __FILE__ ) . 'includes/wp-page-duplicator-settings.php' );
+	}
+	
+	/*
+	*	Setup some descriptive text for this section
+	*	@since 0.1
+	*/
+	public function wp_page_cloner_setting_section_callback_function() {
+		echo '<p>' . __( 'Intro text for our settings section', 'wp-page-cloner' ) . '</p>';
+	 }
+	 
+	/*
+	*	Setup our custom post type selection field
+	*	@since 0.1
+	*/
+	public function wp_page_cloner_cloneable_post_types_callback_function( $args ) {
+		$previously_saved_post_types = get_option( 'cloneable_post_types', array(
+			'post',
+			'page'
+		) );
+		$post_types = get_post_types( '', 'names' );
+		unset( $post_types[ 'attachment' ] );
+		unset( $post_types[ 'nav_menu_item'] );
+		unset( $post_types[ 'revision' ] );
+		?>
+			<select id="select_cloneable_post_types" name="cloneable_post_types[]" multiple>
+				<?php
+					foreach ( $post_types as $post_type ) {
+						$selected = ( in_array( $post_type, $previously_saved_post_types ) ) ? 'selected="selected"' : '';
+						echo '<option value="' . $post_type . '" ' . $selected . '>' . ucwords( $post_type ) . '</option>';
+					}
+				?>
+			</select>
+			<?php print_r ($post_types ); ?>
+			<p class="description"><?php echo $args[0]; ?></p>
+		<?php
+	}
+	
+	
+	/* END SETTINGS PAGE */
+	/***************************/
+	
+	
 	
 	/*
 	*	Create a custom 'Clone Post' button on the Page screen in the row_actions span
 	*	@since 0.1
 	*/
 	public function add_clone_post_button( $actions, $post ) {
+		$post_type_labels = get_post_type_object( $post->post_type );
 		$actions['clone_post'] = '<a href="'. add_query_arg( 
 			array( 
 				'do_action' => 'clone_post',
@@ -31,7 +151,7 @@ class Page_Duplicator {
 				'post_id' => (int) $post->ID 
 			), 
 			esc_url( admin_url( 'edit.php?post_type=page' ) ) 
-		) . '" >Clone Page</a>';
+		) . '" >' . sprintf( __( 'Clone %s', 'yikes-inc-easy-mailchimp-extender' ), $post_type_labels->labels->singular_name ) . '</a>';
 		return $actions;		
 	}
 	
@@ -45,7 +165,6 @@ class Page_Duplicator {
 			$page_id = (int) $_GET['post_id'];
 			$page_object = get_post( $page_id );
 			if( $page_object ) {
-				// wp_die( print_r( $page_object ) );
 				
 				$new_page_title = $page_object->post_title . ' - Clone';
 				$new_page_author = $page_object->post_author;
@@ -56,7 +175,7 @@ class Page_Duplicator {
 				$my_post = array(
 				  'post_title'    => $new_page_title,
 				  'post_content'  => $new_page_content,
-				  'post_type' => 'page',
+				  'post_type' => $page_object->post_type,
 				  'post_status'   => 'draft',
 				  'post_author'   => $new_page_author,
 				);
@@ -67,7 +186,7 @@ class Page_Duplicator {
 					if( $new_page_image_id ) {
 						set_post_thumbnail( $new_post, $new_page_image_id );
 					}
-					wp_redirect( esc_url_raw( admin_url( 'edit.php?post_type=page&post_duplicated=true&cloned_post=' . (int) $new_post ) ) );
+					wp_redirect( esc_url_raw( admin_url( 'edit.php?post_type=' . $page_object->post_type . '&post_duplicated=true&cloned_post=' . (int) $new_post ) ) );
 					exit();
 				}
 			}
@@ -84,12 +203,24 @@ class Page_Duplicator {
 			$page_data = get_post( $page_id );
 			?>
 			<div class="updated">
-				<p><?php echo $page_data->post_title; ?> Sucessfully Cloned! <a href="<?php echo esc_url_raw( admin_url( 'post.php?post=' . $page_id . '&action=edit' ) ); ?>">edit post</a></p>
+				<p><?php echo $page_data->post_title; ?> <?php _e( 'Sucessfully Cloned!', 'wp-page-cloner' ); ?> <a href="<?php echo esc_url_raw( admin_url( 'post.php?post=' . $page_id . '&action=edit' ) ); ?>">edit post</a></p>
 			</div>
 			<?php
 		}
 	}
 
+	/*
+	*	Enqueue the page cloner scripts/styles where needed
+	*	@since 0.1
+	*/
+	public function wp_page_cloner_enqueue_scripts_and_styles( $hook ) {
+		// on our settings page, let's enqueue select2
+		if( $hook == 'settings_page_wp-page-cloner-settings' ) {
+			wp_enqueue_script( 'select2.min.js', plugin_dir_url( __FILE__ ) . 'includes/js/select2.min.js', array( 'jquery' ), 'all', true );
+			wp_enqueue_script( 'select2-init.js', plugin_dir_url( __FILE__ ) . 'includes/js/select2-init.js', array( 'select2.min.js' ), 'all', true );
+			wp_enqueue_style( 'select2.min.css', plugin_dir_url( __FILE__ ) . 'includes/css/select2.css' );
+		}
+	}
 	
 }
 new Page_Duplicator;
