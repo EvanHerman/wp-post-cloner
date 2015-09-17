@@ -1,8 +1,13 @@
-# WP Page Cloner
+# WP Post Cloner
 
 Clone WordPress pages with ease! Written as a small tutorial and example plugin, but ready for production if needed.
 
 Authors: [Evan Herman](https://github.com/EvanHerman), [Ben Rothman](https://github.com/brothman01) 
+
+#### Demonstration
+
+![WP Post Cloner Demo](https://cloudup.com/cKTprTRAIXJ)
+
 
 #### Feature List
 
@@ -10,7 +15,7 @@ Authors: [Evan Herman](https://github.com/EvanHerman), [Ben Rothman](https://git
 * Full control over what is clone-able (Example: Enable cloning pages but disabled it for posts)
 * Complete clone of posts/pages including taxonomies and meta data (featured image, categories, tags and any custom meta assigned to the post/page)
 * Lightweight, compact solution
-* High quality code adhering to WordPress Coding Standards
+* High quality code adhering to [WordPress Coding Standards](https://make.wordpress.org/core/handbook/best-practices/coding-standards/)
 * Nonce checks implemented for security
 
 #### FAQ
@@ -21,7 +26,11 @@ You need to make sure that your permalinks are set to anything but the default i
 
 **I have (a) custom post type(s) registered on my site. Can I use this plugin to clone it?**
 
-Yes! We've built out a settings page ('Settings > WP Page Cloner') where you can specify which post types are cloneable. By default only pages and posts are active. You can add or remove any registered post type on your site. 
+Yes! We've built out a settings page (`'Settings > WP Post Cloner'`) where you can specify which post types are cloneable. By default only pages and posts are active. You can add or remove any registered post type on your site. 
+
+**My custom post type doesn't have a 'Duplicate' button. Why not?**
+
+You need to ensure that you've assigned the psot type as 'clone-able' on the settings page. Head into `'Settings > WP Post cloner'` and click inside the input field to reveal a full list of registered post types. You'll want to make sure that your custom post type appears on this list.
 
 **I have a whole bunch of custom meta assigned to my posts/pages/custom post type, will this plugin transfer over everything?**
 
