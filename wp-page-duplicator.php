@@ -127,7 +127,6 @@ class Page_Duplicator {
 					}
 				?>
 			</select>
-			<?php print_r ($post_types ); ?>
 			<p class="description"><?php echo $args[0]; ?></p>
 		<?php
 	}
@@ -143,15 +142,29 @@ class Page_Duplicator {
 	*	@since 0.1
 	*/
 	public function add_clone_post_button( $actions, $post ) {
-		$post_type_labels = get_post_type_object( $post->post_type );
-		$actions['clone_post'] = '<a href="'. add_query_arg( 
-			array( 
-				'do_action' => 'clone_post',
-				'nonce' => wp_create_nonce( 'clone_post-' . (int) $post->ID ), 
-				'post_id' => (int) $post->ID 
-			), 
-			esc_url( admin_url( 'edit.php?post_type=page' ) ) 
-		) . '" >' . sprintf( __( 'Clone %s', 'yikes-inc-easy-mailchimp-extender' ), $post_type_labels->labels->singular_name ) . '</a>';
+		$cloneable_posts = get_option( 'cloneable_post_types', array(
+			'post',
+			'page'
+		) );
+		if( ! empty( $cloneable_posts ) ) {
+			foreach( $cloneable_posts as $cloneable ) {
+				/* Confirm any custom post types are assigned on the settings page */
+				if( $cloneable == 'post' ) {
+					if( ! in_array( $post->post_type, $cloneable_posts ) ) {
+						return $actions;
+					}
+				}
+				$post_type_labels = get_post_type_object( $post->post_type );
+				$actions['clone_post'] = '<a href="'. add_query_arg( 
+					array( 
+						'do_action' => 'clone_post',
+						'nonce' => wp_create_nonce( 'clone_post-' . (int) $post->ID ), 
+						'post_id' => (int) $post->ID 
+					), 
+					esc_url( admin_url( 'edit.php?post_type=page' ) ) 
+				) . '" >' . sprintf( __( 'Clone %s', 'yikes-inc-easy-mailchimp-extender' ), $post_type_labels->labels->singular_name ) . '</a>';
+			}
+		}
 		return $actions;		
 	}
 	
@@ -164,6 +177,9 @@ class Page_Duplicator {
 			wp_verify_nonce( $_GET['nonce'], 'clone_post-' . $_REQUEST['post_id'] );
 			$page_id = (int) $_GET['post_id'];
 			$page_object = get_post( $page_id );
+			$taxonomies = get_object_taxonomies( $page_object->post_type );
+			$post_meta_data = get_post_meta( $page_id );
+			
 			if( $page_object ) {
 				
 				$new_page_title = $page_object->post_title . ' - Clone';
@@ -179,10 +195,36 @@ class Page_Duplicator {
 				  'post_status'   => 'draft',
 				  'post_author'   => $new_page_author,
 				);
-
+				
 				// Insert the post into the database
 				$new_post = wp_insert_post( $my_post );
 				if( $new_post ) {
+					// Loop over returned taxonomies, and re-assign them to the new post_type
+					if( $taxonomies ) {
+						foreach( $taxonomies as $taxonomy ) {
+							$terms = wp_get_post_terms( $page_id, $taxonomy );
+							if( $terms ) {
+								$assigned_terms = array();
+								foreach( $terms as $assigned_term ) {
+									$assigned_terms[] = $assigned_term->term_id;
+								}
+								wp_set_object_terms( $new_post, $assigned_terms, $taxonomy, false );
+							}
+						}
+					}
+					// Loop over returned metadata, and re-assign them to the new post_type
+					if( $post_meta_data ) {
+						foreach( $post_meta_data as $meta_data => $value ) {
+							if( is_array( $value ) ) {
+								foreach( $value as $meta_value ) {
+									update_post_meta( $new_post, $meta_data, $meta_value );
+								}
+							} else {
+								update_post_meta( $new_post, $meta_data, $value );
+							}
+						}
+					}
+					// re-assign the featured image
 					if( $new_page_image_id ) {
 						set_post_thumbnail( $new_post, $new_page_image_id );
 					}
@@ -203,7 +245,7 @@ class Page_Duplicator {
 			$page_data = get_post( $page_id );
 			?>
 			<div class="updated">
-				<p><?php echo $page_data->post_title; ?> <?php _e( 'Sucessfully Cloned!', 'wp-page-cloner' ); ?> <a href="<?php echo esc_url_raw( admin_url( 'post.php?post=' . $page_id . '&action=edit' ) ); ?>">edit post</a></p>
+				<p><?php echo str_replace( ' - Clone', '', $page_data->post_title ); ?> <?php _e( 'Sucessfully Cloned', 'wp-page-cloner' ); ?> &#187; <a href="<?php echo esc_url_raw( admin_url( 'post.php?post=' . $page_id . '&action=edit' ) ); ?>">edit post</a></p>
 			</div>
 			<?php
 		}
