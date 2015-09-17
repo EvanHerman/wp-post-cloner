@@ -6,7 +6,7 @@ Authors: [Evan Herman](https://github.com/EvanHerman), [Ben Rothman](https://git
 
 #### Demonstration
 
-![WP Post Cloner Demo](https://cloudup.com/cKTprTRAIXJ)
+![WP Post Cloner Demo](https://cldup.com/DqGnOjqYbt.gif)
 
 
 #### Feature List
