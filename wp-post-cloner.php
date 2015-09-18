@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Post Cloner
 Plugin URI:  
-Description: This will add a custom button to duplicate pages and posts
+Description: WP Post cloner allows you to easily make complete duplicates of any post on your site. That includes posts, pages and custom post types.
 Version:     0.1
 Author:      Evan Herman, Ben Rothman
 Author URI:  
@@ -122,8 +122,10 @@ class Page_Duplicator {
 			<select id="select_cloneable_post_types" name="cloneable_post_types[]" multiple>
 				<?php
 					foreach ( $post_types as $post_type ) {
+						$post_type_labels = get_post_type_object( $post_type );
+						$post_type_name = ( isset( $post_type_labels->labels->singular_name ) ) ? $post_type_labels->labels->singular_name : $post_type;
 						$selected = ( in_array( $post_type, $previously_saved_post_types ) ) ? 'selected="selected"' : '';
-						echo '<option value="' . $post_type . '" ' . $selected . '>' . ucwords( $post_type ) . '</option>';
+						echo '<option value="' . $post_type . '" ' . $selected . '>' . ucwords( $post_type_name ) . '</option>';
 					}
 				?>
 			</select>
