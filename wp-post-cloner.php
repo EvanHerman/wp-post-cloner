@@ -22,9 +22,9 @@ class Page_Duplicator {
 			}
 		}
 		// Intercept the action
-		add_action( 'init', array( $this, 'clone_dat_page' ) );
+		add_action( 'init', array( $this, 'clone_page' ) );
 		// Display clone notices
-		add_action( 'admin_notices', array( $this, 'clone_dat_page_admin_notice' ) );
+		add_action( 'admin_notices', array( $this, 'clone_page_admin_notice' ) );
 		// Add custom settings page
 		add_action( 'admin_menu', array( $this, 'create_wp_page_cloner_settings' ) );
 		// Register our settings
@@ -175,7 +175,7 @@ class Page_Duplicator {
 	*	Clone the actual page
 	*	@since 0.1
 	*/
-	public function clone_dat_page() {
+	public function clone_page() {
 		if( isset( $_GET['do_action'] ) && $_GET['do_action'] == 'clone_post' && isset( $_GET['nonce'] ) ) {
 			wp_verify_nonce( $_GET['nonce'], 'clone_post-' . $_REQUEST['post_id'] );
 			$page_id = (int) $_GET['post_id'];
@@ -244,7 +244,7 @@ class Page_Duplicator {
 	*	Display Clone Notices
 	*	@since 0.1
 	*/
-	public function clone_dat_page_admin_notice() {
+	public function clone_page_admin_notice() {
 		if( isset( $_GET['post_duplicated'] ) && $_GET['post_duplicated'] == 'true' ) {
 			$page_id = (int) $_GET['cloned_post'];
 			$page_data = get_post( $page_id );
