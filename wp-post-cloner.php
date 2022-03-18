@@ -164,12 +164,13 @@ class Page_Duplicator {
 						'post_id' => (int) $post->ID 
 					), 
 					esc_url( admin_url( 'edit.php?post_type=page' ) ) 
-				) . '" >' . sprintf( __( 'Clone %s', 'yikes-inc-easy-mailchimp-extender' ), $post_type_labels->labels->singular_name ) . '</a>';
+				) . '" >' . sprintf( __( 'Clone %s', 'Post' ), $post_type_labels->labels->singular_name ) . '</a>';
 			}
 		}
-		return $actions;		
+		return $actions;
 	}
-	
+
+
 	/*
 	*	Clone the actual page
 	*	@since 0.1
@@ -184,12 +185,14 @@ class Page_Duplicator {
 			
 			if( $page_object ) {
 				
+				// copy basic data from post
 				$new_page_title = $page_object->post_title . ' - Clone';
 				$new_page_author = $page_object->post_author;
 				$new_page_content = $page_object->post_content;
 				$new_page_image_id = get_post_thumbnail_id( $page_id );
 				
-				// Create post object
+
+				// Create post object with basic data
 				$my_post = array(
 				  'post_title'    => $new_page_title,
 				  'post_content'  => $new_page_content,
@@ -198,7 +201,7 @@ class Page_Duplicator {
 				  'post_author'   => $new_page_author,
 				);
 				
-				// Insert the post into the database
+				// Insert the newly created post into the database
 				$new_post = wp_insert_post( $my_post );
 				if( $new_post ) {
 					// Loop over returned taxonomies, and re-assign them to the new post_type
