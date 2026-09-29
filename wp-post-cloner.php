@@ -176,9 +176,17 @@ class Page_Duplicator {
 	*	@since 0.1
 	*/
 	public function clone_page() {
-		if( isset( $_GET['do_action'] ) && $_GET['do_action'] == 'clone_post' && isset( $_GET['nonce'] ) ) {
-			wp_verify_nonce( $_GET['nonce'], 'clone_post-' . $_REQUEST['post_id'] );
+		if( isset( $_GET['do_action'] ) && $_GET['do_action'] == 'clone_post' && isset( $_GET['nonce'], $_GET['post_id'] ) ) {
 			$page_id = (int) $_GET['post_id'];
+
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['nonce'] ) ), 'clone_post-' . $page_id ) ) {
+				return;
+			}
+
+			if ( ! current_user_can( 'edit_post', $page_id ) ) {
+				return;
+			}
+
 			$page_object = get_post( $page_id );
 			$taxonomies = get_object_taxonomies( $page_object->post_type );
 			$post_meta_data = get_post_meta( $page_id );
